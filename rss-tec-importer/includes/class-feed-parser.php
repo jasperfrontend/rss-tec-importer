@@ -75,9 +75,10 @@ class RSS_TEC_Feed_Parser {
 			return new WP_Error( 'rss_tec_xml_parse', sprintf( __( 'XML parse error: %s', 'rss-tec-importer' ), $msg ) );
 		}
 
-		// Detect content:encoded namespace.
-		$ns          = $xml->getNamespaces( true );
-		$content_ns  = $ns['content'] ?? null;
+		// Detect namespaces used in this feed.
+		$ns         = $xml->getNamespaces( true );
+		$content_ns = $ns['content'] ?? null;
+		$ev_ns      = $ns['ev']      ?? null; // http://purl.org/rss/2.0/modules/event/
 
 		$items = [];
 
@@ -97,10 +98,23 @@ class RSS_TEC_Feed_Parser {
 				? (string) $item->children( $content_ns )->encoded
 				: $description;
 
-			// Parse pubDate as start datetime.
-			$start_dt = DateTime::createFromFormat( DateTime::RFC2822, $pub_date );
-			if ( false === $start_dt ) {
-				// Try a looser parse as a fallback.
+			// --- Start date ---
+			// Prefer ev:startdate (ISO 8601) when the ev: namespace is present;
+			// fall back to pubDate (RFC 2822) which TEC also sets to the start time.
+			$start_dt = null;
+
+			if ( $ev_ns ) {
+				$ev_start_str = trim( (string) $item->children( $ev_ns )->startdate );
+				if ( $ev_start_str ) {
+					$start_dt = date_create( $ev_start_str ) ?: null;
+				}
+			}
+
+			if ( ! $start_dt ) {
+				$start_dt = DateTime::createFromFormat( DateTime::RFC2822, $pub_date ) ?: null;
+			}
+
+			if ( ! $start_dt ) {
 				try {
 					$start_dt = new DateTime( $pub_date, wp_timezone() );
 				} catch ( Exception $e ) {
@@ -109,12 +123,27 @@ class RSS_TEC_Feed_Parser {
 				}
 			}
 
-			// Convert to site timezone.
 			$start_dt->setTimezone( wp_timezone() );
 
 			$start_date   = $start_dt->format( 'Y-m-d' );
 			$start_hour   = $start_dt->format( 'H' );
 			$start_minute = $start_dt->format( 'i' );
+
+			// --- End date ---
+			// Use ev:enddate when present (ISO 8601); null signals the importer
+			// to fall back to the configured duration offset instead.
+			$end_dt = null;
+
+			if ( $ev_ns ) {
+				$ev_end_str = trim( (string) $item->children( $ev_ns )->enddate );
+				if ( $ev_end_str ) {
+					$parsed = date_create( $ev_end_str );
+					if ( $parsed ) {
+						$end_dt = $parsed;
+						$end_dt->setTimezone( wp_timezone() );
+					}
+				}
+			}
 
 			// Extract first image from the description (not encoded — description tends to have the img).
 			$image_url = self::extract_first_image( $description ?: $encoded );
@@ -130,6 +159,11 @@ class RSS_TEC_Feed_Parser {
 				'start_date'   => $start_date,
 				'start_hour'   => $start_hour,
 				'start_minute' => $start_minute,
+				// These three are null when no ev:enddate is in the feed;
+				// the importer will compute end time from the configured duration.
+				'end_date'     => $end_dt ? $end_dt->format( 'Y-m-d' ) : null,
+				'end_hour'     => $end_dt ? $end_dt->format( 'H' )     : null,
+				'end_minute'   => $end_dt ? $end_dt->format( 'i' )     : null,
 				'post_content' => $post_content,
 				'image_url'    => $image_url,
 			];

@@ -68,19 +68,30 @@ class RSS_TEC_Importer {
 		foreach ( $items as $item ) {
 			$existing_id = $instance->find_existing_event( $item['guid'] );
 
-			// Build end datetime.
+			// Build start DateTime.
 			$start_dt = DateTime::createFromFormat(
 				'Y-m-d H:i',
 				$item['start_date'] . ' ' . $item['start_hour'] . ':' . $item['start_minute'],
 				wp_timezone()
 			);
 
-			$end_dt = clone $start_dt;
-			$end_dt->modify( "+{$duration} hours" );
-
-			$end_date   = $end_dt->format( 'Y-m-d' );
-			$end_hour   = $end_dt->format( 'H' );
-			$end_minute = $end_dt->format( 'i' );
+			// Use end date from feed when available; otherwise apply configured duration.
+			if ( isset( $item['end_date'] ) ) {
+				$end_date   = $item['end_date'];
+				$end_hour   = $item['end_hour'];
+				$end_minute = $item['end_minute'];
+				$end_dt     = DateTime::createFromFormat(
+					'Y-m-d H:i',
+					$end_date . ' ' . $end_hour . ':' . $end_minute,
+					wp_timezone()
+				);
+			} else {
+				$end_dt = clone $start_dt;
+				$end_dt->modify( "+{$duration} hours" );
+				$end_date   = $end_dt->format( 'Y-m-d' );
+				$end_hour   = $end_dt->format( 'H' );
+				$end_minute = $end_dt->format( 'i' );
+			}
 
 			if ( $existing_id ) {
 				if ( ! $update_existing ) {
