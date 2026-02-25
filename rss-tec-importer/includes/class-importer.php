@@ -55,9 +55,16 @@ class RSS_TEC_Importer {
 			return $items;
 		}
 
-		$duration       = (int) ( $settings['event_duration'] ?? 1 );
-		$post_status    = $settings['post_status']      ?? 'draft';
+		$duration        = (int) ( $settings['event_duration'] ?? 1 );
+		$post_status     = $settings['post_status']      ?? 'draft';
 		$update_existing = ! empty( $settings['update_existing'] );
+
+		RSS_TEC_Logger::info( 'Importer settings', [
+			'duration_hours'   => $duration,
+			'post_status'      => $post_status,
+			'update_existing'  => $update_existing ? 'yes' : 'no',
+			'item_count'       => count( $items ),
+		] );
 
 		$created = 0;
 		$updated = 0;
@@ -66,7 +73,13 @@ class RSS_TEC_Importer {
 		$instance = new self();
 
 		foreach ( $items as $item ) {
+			RSS_TEC_Logger::info( '── Importer: processing "' . $item['title'] . '"' );
+
 			$existing_id = $instance->find_existing_event( $item['guid'] );
+			RSS_TEC_Logger::info( 'Existing event lookup', [
+				'guid'        => $item['guid'],
+				'existing_id' => $existing_id ?: 'none',
+			] );
 
 			// Build start DateTime.
 			$start_dt = DateTime::createFromFormat(
@@ -76,6 +89,13 @@ class RSS_TEC_Importer {
 			);
 
 			// Use end date from feed when available; otherwise apply configured duration.
+			RSS_TEC_Logger::info( 'end_date from parser', [
+				'end_date'   => $item['end_date']   ?? 'NULL',
+				'end_hour'   => $item['end_hour']   ?? 'NULL',
+				'end_minute' => $item['end_minute'] ?? 'NULL',
+				'isset_check' => isset( $item['end_date'] ) ? 'true' : 'false',
+			] );
+
 			if ( isset( $item['end_date'] ) ) {
 				$end_date   = $item['end_date'];
 				$end_hour   = $item['end_hour'];
@@ -85,16 +105,28 @@ class RSS_TEC_Importer {
 					$end_date . ' ' . $end_hour . ':' . $end_minute,
 					wp_timezone()
 				);
+				RSS_TEC_Logger::success( 'Using end date from feed', [
+					'end_date'   => $end_date,
+					'end_hour'   => $end_hour,
+					'end_minute' => $end_minute,
+				] );
 			} else {
 				$end_dt = clone $start_dt;
 				$end_dt->modify( "+{$duration} hours" );
 				$end_date   = $end_dt->format( 'Y-m-d' );
 				$end_hour   = $end_dt->format( 'H' );
 				$end_minute = $end_dt->format( 'i' );
+				RSS_TEC_Logger::warning( 'end_date was null — computed from duration', [
+					'duration_hours' => $duration,
+					'end_date'       => $end_date,
+					'end_hour'       => $end_hour,
+					'end_minute'     => $end_minute,
+				] );
 			}
 
 			if ( $existing_id ) {
 				if ( ! $update_existing ) {
+					RSS_TEC_Logger::info( 'Skipping existing event (update_existing = false)', [ 'post_id' => $existing_id ] );
 					$skipped++;
 					continue;
 				}
@@ -109,9 +141,24 @@ class RSS_TEC_Importer {
 				);
 
 				if ( $result ) {
+					RSS_TEC_Logger::success( 'Event updated', [ 'post_id' => $existing_id ] );
 					$updated++;
+				} else {
+					RSS_TEC_Logger::error( 'Event update failed', [ 'post_id' => $existing_id ] );
 				}
 			} else {
+				// Log the exact args going into tribe_create_event.
+				RSS_TEC_Logger::info( 'Calling tribe_create_event with args', [
+					'post_title'       => $item['title'],
+					'post_status'      => $post_status,
+					'EventStartDate'   => $item['start_date'],
+					'EventStartHour'   => $item['start_hour'],
+					'EventStartMinute' => $item['start_minute'],
+					'EventEndDate'     => $end_date,
+					'EventEndHour'     => $end_hour,
+					'EventEndMinute'   => $end_minute,
+				] );
+
 				// Create new event.
 				$post_id = $instance->create_event(
 					$item,
@@ -122,7 +169,10 @@ class RSS_TEC_Importer {
 				);
 
 				if ( $post_id ) {
+					RSS_TEC_Logger::success( 'Event created', [ 'post_id' => $post_id ] );
 					$created++;
+				} else {
+					RSS_TEC_Logger::error( 'tribe_create_event failed', [ 'title' => $item['title'] ] );
 				}
 			}
 		}

@@ -1,15 +1,60 @@
 <?php
 /**
- * RSS_TEC_Feed_Parser
+ * RSS_TEC_Logger
  *
- * Fetches and parses a TEC-flavoured RSS feed, extracting the data needed
- * to create or update events.
+ * Tiny static log collector. Every component writes to it during a manual
+ * import; the admin page reads and displays the entries after the redirect.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+class RSS_TEC_Logger {
+
+	private static array $entries = [];
+
+	public static function info( string $msg, array $data = [] ): void {
+		self::add( 'info', $msg, $data );
+	}
+
+	public static function success( string $msg, array $data = [] ): void {
+		self::add( 'success', $msg, $data );
+	}
+
+	public static function warning( string $msg, array $data = [] ): void {
+		self::add( 'warning', $msg, $data );
+	}
+
+	public static function error( string $msg, array $data = [] ): void {
+		self::add( 'error', $msg, $data );
+	}
+
+	private static function add( string $level, string $msg, array $data ): void {
+		self::$entries[] = [
+			'level'   => $level,
+			'message' => $msg,
+			'data'    => $data,
+		];
+	}
+
+	public static function get(): array {
+		return self::$entries;
+	}
+
+	public static function clear(): void {
+		self::$entries = [];
+	}
+}
+
+// ---------------------------------------------------------------------------
+
+/**
+ * RSS_TEC_Feed_Parser
+ *
+ * Fetches and parses a TEC-flavoured RSS feed, extracting the data needed
+ * to create or update events.
+ */
 class RSS_TEC_Feed_Parser {
 
 	/**
@@ -19,6 +64,8 @@ class RSS_TEC_Feed_Parser {
 	 * @return array[]|WP_Error Array of event arrays, or WP_Error on failure.
 	 */
 	public static function fetch_and_parse( string $feed_url ): array|WP_Error {
+		RSS_TEC_Logger::info( 'Fetching feed', [ 'url' => $feed_url ] );
+
 		$response = wp_remote_get(
 			$feed_url,
 			[
@@ -28,6 +75,7 @@ class RSS_TEC_Feed_Parser {
 		);
 
 		if ( is_wp_error( $response ) ) {
+			RSS_TEC_Logger::error( 'wp_remote_get failed', [ 'error' => $response->get_error_message() ] );
 			return new WP_Error(
 				'rss_tec_fetch_failed',
 				sprintf(
@@ -39,7 +87,10 @@ class RSS_TEC_Feed_Parser {
 		}
 
 		$http_code = wp_remote_retrieve_response_code( $response );
+		RSS_TEC_Logger::info( 'HTTP response', [ 'code' => $http_code ] );
+
 		if ( 200 !== (int) $http_code ) {
+			RSS_TEC_Logger::error( 'Non-200 HTTP response', [ 'code' => $http_code ] );
 			return new WP_Error(
 				'rss_tec_bad_response',
 				sprintf(
@@ -51,7 +102,10 @@ class RSS_TEC_Feed_Parser {
 		}
 
 		$body = wp_remote_retrieve_body( $response );
+		RSS_TEC_Logger::info( 'Feed body received', [ 'bytes' => strlen( $body ) ] );
+
 		if ( empty( $body ) ) {
+			RSS_TEC_Logger::error( 'Feed body is empty' );
 			return new WP_Error( 'rss_tec_empty_body', __( 'Feed body is empty.', 'rss-tec-importer' ) );
 		}
 
@@ -72,6 +126,7 @@ class RSS_TEC_Feed_Parser {
 			$errors = libxml_get_errors();
 			libxml_clear_errors();
 			$msg = ! empty( $errors ) ? $errors[0]->message : 'Unknown XML error';
+			RSS_TEC_Logger::error( 'XML parse failed', [ 'libxml_error' => $msg ] );
 			return new WP_Error( 'rss_tec_xml_parse', sprintf( __( 'XML parse error: %s', 'rss-tec-importer' ), $msg ) );
 		}
 
@@ -79,11 +134,17 @@ class RSS_TEC_Feed_Parser {
 		$ns         = $xml->getNamespaces( true );
 		$content_ns = $ns['content'] ?? null;
 
+		RSS_TEC_Logger::info( 'Namespaces detected', $ns );
+
 		$items = [];
 
 		if ( ! isset( $xml->channel ) ) {
+			RSS_TEC_Logger::error( 'No <channel> element found in feed' );
 			return new WP_Error( 'rss_tec_no_channel', __( 'No <channel> element found in feed.', 'rss-tec-importer' ) );
 		}
+
+		$item_count = iterator_count( $xml->channel->item );
+		RSS_TEC_Logger::info( 'Items found in feed', [ 'count' => $item_count ] );
 
 		foreach ( $xml->channel->item as $item ) {
 			$guid        = trim( (string) $item->guid );
@@ -91,6 +152,12 @@ class RSS_TEC_Feed_Parser {
 			$link        = trim( (string) $item->link );
 			$pub_date    = trim( (string) $item->pubDate );
 			$description = (string) $item->description;
+
+			RSS_TEC_Logger::info( '── Processing item', [
+				'title'    => $title,
+				'guid'     => $guid,
+				'pubDate'  => $pub_date,
+			] );
 
 			// Prefer content:encoded for body; fall back to description.
 			$encoded = $content_ns
@@ -108,12 +175,26 @@ class RSS_TEC_Feed_Parser {
 			$ev_start_str = '';
 			$ev_end_str   = '';
 
+			// Log the raw ev: section so we can see exactly what SimpleXML received.
+			$ev_pos     = strpos( $raw_item, '<ev:' );
+			$ev_snippet = ( false !== $ev_pos )
+				? substr( $raw_item, $ev_pos, min( 600, strlen( $raw_item ) - $ev_pos ) )
+				: '(no <ev: tags found anywhere in this item\'s raw XML)';
+
+			RSS_TEC_Logger::info( 'Raw ev: XML section', [ 'snippet' => $ev_snippet ] );
+
 			if ( preg_match( '#<ev:startdate[^>]*>(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[^<]+)</ev:startdate>#', $raw_item, $m ) ) {
 				$ev_start_str = trim( $m[1] );
+				RSS_TEC_Logger::success( 'ev:startdate regex matched', [ 'value' => $ev_start_str ] );
+			} else {
+				RSS_TEC_Logger::warning( 'ev:startdate regex did NOT match — will fall back to pubDate' );
 			}
 
 			if ( preg_match( '#<ev:enddate[^>]*>(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[^<]+)</ev:enddate>#', $raw_item, $m ) ) {
 				$ev_end_str = trim( $m[1] );
+				RSS_TEC_Logger::success( 'ev:enddate regex matched', [ 'value' => $ev_end_str ] );
+			} else {
+				RSS_TEC_Logger::warning( 'ev:enddate regex did NOT match — importer will use configured duration' );
 			}
 
 			// --- Start date ---
@@ -122,16 +203,29 @@ class RSS_TEC_Feed_Parser {
 
 			if ( $ev_start_str ) {
 				$start_dt = date_create( $ev_start_str ) ?: null;
+				if ( $start_dt ) {
+					RSS_TEC_Logger::info( 'Start date parsed from ev:startdate', [ 'raw' => $ev_start_str ] );
+				} else {
+					RSS_TEC_Logger::error( 'date_create() failed for ev:startdate', [ 'raw' => $ev_start_str ] );
+				}
 			}
 
 			if ( ! $start_dt ) {
 				$start_dt = DateTime::createFromFormat( DateTime::RFC2822, $pub_date ) ?: null;
+				if ( $start_dt ) {
+					RSS_TEC_Logger::info( 'Start date parsed from pubDate (RFC2822)', [ 'raw' => $pub_date ] );
+				}
 			}
 
 			if ( ! $start_dt ) {
 				try {
 					$start_dt = new DateTime( $pub_date, wp_timezone() );
+					RSS_TEC_Logger::info( 'Start date parsed from pubDate (loose)', [ 'raw' => $pub_date ] );
 				} catch ( Exception $e ) {
+					RSS_TEC_Logger::error( 'Could not parse date at all — skipping item', [
+						'pubDate' => $pub_date,
+						'error'   => $e->getMessage(),
+					] );
 					error_log( '[RSS TEC Importer] Could not parse date "' . $pub_date . '" for item: ' . $title );
 					continue;
 				}
@@ -143,6 +237,12 @@ class RSS_TEC_Feed_Parser {
 			$start_hour   = $start_dt->format( 'H' );
 			$start_minute = $start_dt->format( 'i' );
 
+			RSS_TEC_Logger::info( 'Final start datetime (site timezone)', [
+				'date'   => $start_date,
+				'hour'   => $start_hour,
+				'minute' => $start_minute,
+			] );
+
 			// --- End date ---
 			// Use ev:enddate when present; null tells the importer to apply
 			// the configured duration offset instead.
@@ -153,7 +253,17 @@ class RSS_TEC_Feed_Parser {
 				if ( $parsed ) {
 					$end_dt = $parsed;
 					$end_dt->setTimezone( wp_timezone() );
+					RSS_TEC_Logger::success( 'End date parsed from ev:enddate', [
+						'raw'    => $ev_end_str,
+						'date'   => $end_dt->format( 'Y-m-d' ),
+						'hour'   => $end_dt->format( 'H' ),
+						'minute' => $end_dt->format( 'i' ),
+					] );
+				} else {
+					RSS_TEC_Logger::error( 'date_create() failed for ev:enddate', [ 'raw' => $ev_end_str ] );
 				}
+			} else {
+				RSS_TEC_Logger::warning( 'No ev:enddate available — end_date will be null in item array; importer uses configured duration' );
 			}
 
 			// Extract first image from the description (not encoded — description tends to have the img).
@@ -163,7 +273,7 @@ class RSS_TEC_Feed_Parser {
 			$post_content = preg_replace( '/<img\s[^>]*>/i', '', $encoded, 1 );
 			$post_content = trim( $post_content );
 
-			$items[] = [
+			$item_data = [
 				'guid'         => $guid,
 				'title'        => $title,
 				'link'         => $link,
@@ -178,7 +288,13 @@ class RSS_TEC_Feed_Parser {
 				'post_content' => $post_content,
 				'image_url'    => $image_url,
 			];
+
+			RSS_TEC_Logger::info( 'Item array being passed to importer', array_diff_key( $item_data, [ 'post_content' => 1 ] ) );
+
+			$items[] = $item_data;
 		}
+
+		RSS_TEC_Logger::info( 'Parser finished', [ 'items_returned' => count( $items ) ] );
 
 		return $items;
 	}
