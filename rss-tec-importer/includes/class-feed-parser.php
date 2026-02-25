@@ -2,8 +2,9 @@
 /**
  * RSS_TEC_Logger
  *
- * Tiny static log collector. Every component writes to it during a manual
- * import; the admin page reads and displays the entries after the redirect.
+ * Tiny static log collector. Feed parser and importer write to it during
+ * every import; the admin page reads and displays the entries when debug
+ * mode is requested via the "Show debug log" checkbox on the settings page.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -179,9 +180,9 @@ class RSS_TEC_Feed_Parser {
 			$description = (string) $item->description;
 
 			RSS_TEC_Logger::info( '── Processing item', [
-				'title'    => $title,
-				'guid'     => $guid,
-				'pubDate'  => $pub_date,
+				'title'   => $title,
+				'guid'    => $guid,
+				'pubDate' => $pub_date,
 			] );
 
 			// Prefer content:encoded for body; fall back to description.
@@ -192,10 +193,9 @@ class RSS_TEC_Feed_Parser {
 			// --- Extract ev:startdate / ev:enddate from raw item XML ---
 			// We use regex on the raw XML rather than SimpleXML namespace-aware
 			// methods because namespace resolution is unreliable when the source
-			// feed has conflicting xmlns:ev declarations (e.g. a legacy snippet
-			// that redeclares ev: locally). The pattern only matches ISO 8601
-			// datetimes (YYYY-MM-DDTHH:MM:SS±...) so it ignores any locale-
-			// formatted strings that older snippet configurations might produce.
+			// feed has conflicting xmlns:ev declarations. The pattern only matches
+			// ISO 8601 datetimes (YYYY-MM-DDTHH:MM:SS±...) so it ignores any
+			// locale-formatted strings that older snippet configurations produce.
 			$raw_item     = $item->asXML();
 			$ev_start_str = '';
 			$ev_end_str   = '';
@@ -204,8 +204,7 @@ class RSS_TEC_Feed_Parser {
 			$ev_pos     = strpos( $raw_item, '<ev:' );
 			$ev_snippet = ( false !== $ev_pos )
 				? substr( $raw_item, $ev_pos, min( 600, strlen( $raw_item ) - $ev_pos ) )
-				: '(no <ev: tags found anywhere in this item\'s raw XML)';
-
+				: '(no <ev: tags found in raw item XML)';
 			RSS_TEC_Logger::info( 'Raw ev: XML section', [ 'snippet' => $ev_snippet ] );
 
 			if ( preg_match( '#<ev:startdate[^>]*>(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[^<]+)</ev:startdate>#', $raw_item, $m ) ) {
@@ -288,7 +287,7 @@ class RSS_TEC_Feed_Parser {
 					RSS_TEC_Logger::error( 'date_create() failed for ev:enddate', [ 'raw' => $ev_end_str ] );
 				}
 			} else {
-				RSS_TEC_Logger::warning( 'No ev:enddate available — end_date will be null in item array; importer uses configured duration' );
+				RSS_TEC_Logger::warning( 'No ev:enddate — importer will use configured duration' );
 			}
 
 			// Extract first image from the description (not encoded — description tends to have the img).
@@ -314,7 +313,7 @@ class RSS_TEC_Feed_Parser {
 				'image_url'    => $image_url,
 			];
 
-			RSS_TEC_Logger::info( 'Item array being passed to importer', array_diff_key( $item_data, [ 'post_content' => 1 ] ) );
+			RSS_TEC_Logger::info( 'Item array passed to importer', array_diff_key( $item_data, [ 'post_content' => 1 ] ) );
 
 			$items[] = $item_data;
 		}

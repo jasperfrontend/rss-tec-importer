@@ -260,6 +260,12 @@ class RSS_TEC_Admin {
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="rss_tec_import_now" />
 				<?php wp_nonce_field( 'rss_tec_import_now_action', 'rss_tec_import_now_nonce' ); ?>
+				<p>
+					<label>
+						<input type="checkbox" name="rss_tec_debug" value="1" />
+						<?php esc_html_e( 'Show debug log after import', 'rss-tec-importer' ); ?>
+					</label>
+				</p>
 				<?php submit_button( __( 'Import Now', 'rss-tec-importer' ), 'secondary' ); ?>
 			</form>
 		</div>
@@ -437,13 +443,17 @@ class RSS_TEC_Admin {
 
 		check_admin_referer( 'rss_tec_import_now_action', 'rss_tec_import_now_nonce' );
 
+		$debug_requested = ! empty( $_POST['rss_tec_debug'] );
+
 		RSS_TEC_Logger::clear();
 
 		$settings = get_option( RSS_TEC_IMPORTER_OPTION_KEY, [] );
 		$result   = RSS_TEC_Importer::run( $settings );
 
-		// Persist the debug log so it survives the redirect.
-		set_transient( 'rss_tec_debug_log', RSS_TEC_Logger::get(), 5 * MINUTE_IN_SECONDS );
+		// Only persist the debug log when the checkbox was ticked.
+		if ( $debug_requested ) {
+			set_transient( 'rss_tec_debug_log', RSS_TEC_Logger::get(), 5 * MINUTE_IN_SECONDS );
+		}
 
 		$redirect_args = [ 'page' => self::PAGE_SLUG, 'rss_tec_imported' => '1' ];
 
