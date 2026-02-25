@@ -78,7 +78,6 @@ class RSS_TEC_Feed_Parser {
 		// Detect namespaces used in this feed.
 		$ns         = $xml->getNamespaces( true );
 		$content_ns = $ns['content'] ?? null;
-		$ev_ns_uri  = $ns['ev']      ?? null; // http://purl.org/rss/2.0/modules/event/
 
 		$items = [];
 
@@ -98,22 +97,27 @@ class RSS_TEC_Feed_Parser {
 				? (string) $item->children( $content_ns )->encoded
 				: $description;
 
-			// --- Start date ---
-			// Prefer ev:startdate (ISO 8601) when the ev: namespace is present;
-			// fall back to pubDate (RFC 2822) which TEC also sets to the start time.
-			// XPath is used here because SimpleXML's property-based child access
-			// ( ->children($ns)->element ) is unreliable for custom namespaces.
+			// --- Extract ev:startdate / ev:enddate from raw item XML ---
+			// We use regex on the raw XML rather than SimpleXML namespace-aware
+			// methods because namespace resolution is unreliable when the source
+			// feed has conflicting xmlns:ev declarations (e.g. a legacy snippet
+			// that redeclares ev: locally). The pattern only matches ISO 8601
+			// datetimes (YYYY-MM-DDTHH:MM:SS±...) so it ignores any locale-
+			// formatted strings that older snippet configurations might produce.
+			$raw_item     = $item->asXML();
 			$ev_start_str = '';
 			$ev_end_str   = '';
 
-			if ( $ev_ns_uri ) {
-				$item->registerXPathNamespace( 'ev', $ev_ns_uri );
-				$ev_start_nodes = $item->xpath( 'ev:startdate' );
-				$ev_end_nodes   = $item->xpath( 'ev:enddate' );
-				$ev_start_str   = ! empty( $ev_start_nodes ) ? trim( (string) $ev_start_nodes[0] ) : '';
-				$ev_end_str     = ! empty( $ev_end_nodes )   ? trim( (string) $ev_end_nodes[0] )   : '';
+			if ( preg_match( '#<ev:startdate[^>]*>(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[^<]+)</ev:startdate>#', $raw_item, $m ) ) {
+				$ev_start_str = trim( $m[1] );
 			}
 
+			if ( preg_match( '#<ev:enddate[^>]*>(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[^<]+)</ev:enddate>#', $raw_item, $m ) ) {
+				$ev_end_str = trim( $m[1] );
+			}
+
+			// --- Start date ---
+			// Prefer ev:startdate; fall back to pubDate (RFC 2822).
 			$start_dt = null;
 
 			if ( $ev_start_str ) {
@@ -140,8 +144,8 @@ class RSS_TEC_Feed_Parser {
 			$start_minute = $start_dt->format( 'i' );
 
 			// --- End date ---
-			// Use ev:enddate when present (ISO 8601); null signals the importer
-			// to fall back to the configured duration offset instead.
+			// Use ev:enddate when present; null tells the importer to apply
+			// the configured duration offset instead.
 			$end_dt = null;
 
 			if ( $ev_end_str ) {
