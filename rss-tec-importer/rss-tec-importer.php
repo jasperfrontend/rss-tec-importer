@@ -3,7 +3,7 @@
  * Plugin Name:       RSS TEC Importer
  * Plugin URI:        https://github.com/
  * Description:       Imports events from an RSS feed (The Events Calendar format) into The Events Calendar on this site.
- * Version:           1.1.0
+ * Version:           1.2.0
  * Requires at least: 6.0
  * Requires PHP:      8.0
  * Author:            Jasper
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'RSS_TEC_IMPORTER_VERSION', '1.1.0' );
+define( 'RSS_TEC_IMPORTER_VERSION', '1.2.0' );
 define( 'RSS_TEC_IMPORTER_FILE', __FILE__ );
 define( 'RSS_TEC_IMPORTER_DIR', plugin_dir_path( __FILE__ ) );
 define( 'RSS_TEC_IMPORTER_URL', plugin_dir_url( __FILE__ ) );
@@ -49,11 +49,13 @@ function rss_tec_importer_bootstrap(): void {
 	require_once RSS_TEC_IMPORTER_DIR . 'includes/class-importer.php';
 	require_once RSS_TEC_IMPORTER_DIR . 'includes/class-cron.php';
 	require_once RSS_TEC_IMPORTER_DIR . 'includes/class-admin.php';
+	require_once RSS_TEC_IMPORTER_DIR . 'includes/class-updater.php';
 
 	// Wire up hooks for each component.
 	RSS_TEC_Importer::init();
 	RSS_TEC_Cron::init();
 	RSS_TEC_Admin::init();
+	RSS_TEC_Updater::init();
 }
 
 /**

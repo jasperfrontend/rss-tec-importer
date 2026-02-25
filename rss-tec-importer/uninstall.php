@@ -13,3 +13,4 @@ delete_option( 'rss_tec_importer_settings' );
 delete_option( 'rss_tec_importer_last_run' );
 delete_option( 'rss_tec_importer_last_result' );
 delete_option( 'rss_tec_importer_last_error' );
+delete_transient( 'rss_tec_github_release' );
