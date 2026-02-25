@@ -392,10 +392,7 @@ class RSS_TEC_Admin {
 	 * Render the "add this to your source site" code snippet section.
 	 */
 	private static function render_source_snippet(): void {
-		$timezone = wp_timezone_string();
-
-		// Build the snippet with the site's actual timezone substituted in.
-		// Uses nowdoc so we can write PHP code without escaping issues.
+		// Uses nowdoc so the PHP code inside is treated as a plain string.
 		$snippet = <<<'SNIPPET'
 /**
  * Adds ISO 8601 event date fields to The Events Calendar RSS feed.
@@ -406,9 +403,8 @@ class RSS_TEC_Admin {
  * end times and will fall back to the fixed default duration configured in
  * the plugin settings instead.
  *
- * The timezone string must match the timezone configured on the source site
- * (Settings > General > Timezone). The value below was automatically copied
- * from this site's timezone setting — adjust it if your source site differs.
+ * wp_timezone_string() reads the timezone directly from the source site's
+ * own Settings > General, so no manual timezone configuration is needed.
  *
  * @see https://theeventscalendar.com/knowledgebase/customizing-the-rss-feed/
  */
@@ -423,12 +419,10 @@ add_action( 'rss2_item', function() {
 	if ( ! tribe_is_event() ) {
 		return;
 	}
-	echo '<ev:startdate>' . esc_html( tribe_get_start_date( null, true, 'c', 'TIMEZONE' ) ) . '</ev:startdate>' . "\n";
-	echo '<ev:enddate>'   . esc_html( tribe_get_end_date( null, true, 'c', 'TIMEZONE' ) )   . '</ev:enddate>'   . "\n";
+	echo '<ev:startdate>' . esc_html( tribe_get_start_date( null, true, 'c', wp_timezone_string() ) ) . '</ev:startdate>' . "\n";
+	echo '<ev:enddate>'   . esc_html( tribe_get_end_date( null, true, 'c', wp_timezone_string() ) )   . '</ev:enddate>'   . "\n";
 } );
 SNIPPET;
-
-		$snippet = str_replace( 'TIMEZONE', $timezone, $snippet );
 
 		?>
 		<h2><?php esc_html_e( 'Source Site Setup', 'rss-tec-importer' ); ?></h2>
@@ -443,13 +437,7 @@ SNIPPET;
 			?>
 		</p>
 		<p style="color: #646970;">
-			<?php
-			printf(
-				/* translators: %s: timezone string */
-				esc_html__( 'The timezone in the snippet (%s) is read from this site\'s Settings > General. Adjust it if your source site uses a different timezone.', 'rss-tec-importer' ),
-				'<code>' . esc_html( $timezone ) . '</code>'
-			);
-			?>
+			<?php esc_html_e( 'The snippet uses wp_timezone_string() so it automatically reads the correct timezone from whichever site it is installed on — no manual adjustments needed.', 'rss-tec-importer' ); ?>
 		</p>
 
 		<div style="margin-bottom: 8px;">
