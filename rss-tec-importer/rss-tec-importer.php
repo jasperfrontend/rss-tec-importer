@@ -3,20 +3,21 @@
  * Plugin Name:       RSS TEC Importer
  * Plugin URI:        https://github.com/
  * Description:       Imports events from an RSS feed (The Events Calendar format) into The Events Calendar on this site.
- * Version:           1.0.9
+ * Version:           1.1.0
  * Requires at least: 6.0
  * Requires PHP:      8.0
  * Author:            Jasper
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       rss-tec-importer
+ * Domain Path:       /languages
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'RSS_TEC_IMPORTER_VERSION', '1.0.9' );
+define( 'RSS_TEC_IMPORTER_VERSION', '1.1.0' );
 define( 'RSS_TEC_IMPORTER_FILE', __FILE__ );
 define( 'RSS_TEC_IMPORTER_DIR', plugin_dir_path( __FILE__ ) );
 define( 'RSS_TEC_IMPORTER_URL', plugin_dir_url( __FILE__ ) );
@@ -30,6 +31,13 @@ define( 'RSS_TEC_IMPORTER_CRON_HOOK', 'rss_tec_importer_run' );
 add_action( 'plugins_loaded', 'rss_tec_importer_bootstrap', 10 );
 
 function rss_tec_importer_bootstrap(): void {
+	// Load translations before anything else so notices are translatable too.
+	load_plugin_textdomain(
+		'rss-tec-importer',
+		false,
+		dirname( plugin_basename( RSS_TEC_IMPORTER_FILE ) ) . '/languages'
+	);
+
 	// Hard dependency: The Events Calendar must be active.
 	if ( ! class_exists( 'Tribe__Events__Main' ) ) {
 		add_action( 'admin_notices', 'rss_tec_importer_notice_no_tec' );

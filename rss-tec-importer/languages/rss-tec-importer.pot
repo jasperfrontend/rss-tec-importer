@@ -1,0 +1,276 @@
+# Copyright (C) 2026 Jasper
+# This file is distributed under the same license as the RSS TEC Importer plugin.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: RSS TEC Importer 1.1.0\n"
+"Report-Msgid-Bugs-To: https://github.com/jasperfrontend/rss-tec-importer/issues\n"
+"POT-Creation-Date: 2026-02-25T12:00:00+00:00\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+"X-Domain: rss-tec-importer\n"
+
+#. Plugin Name of the plugin
+msgid "RSS TEC Importer"
+msgstr ""
+
+#. Description of the plugin
+msgid "Imports events from an RSS feed (The Events Calendar format) into The Events Calendar on this site."
+msgstr ""
+
+#. Author of the plugin
+msgid "Jasper"
+msgstr ""
+
+#: rss-tec-importer.php
+msgid "RSS TEC Importer requires The Events Calendar plugin to be installed and active."
+msgstr ""
+
+#: rss-tec-importer.php
+msgid "RSS TEC Importer requires The Events Calendar to be installed and active."
+msgstr ""
+
+#: rss-tec-importer.php
+msgid "Plugin Activation Error"
+msgstr ""
+
+#: includes/class-feed-parser.php
+#, php-format
+msgid "Failed to fetch feed: %s"
+msgstr ""
+
+#: includes/class-feed-parser.php
+#, php-format
+msgid "Feed returned HTTP %d."
+msgstr ""
+
+#: includes/class-feed-parser.php
+msgid "Feed body is empty."
+msgstr ""
+
+#: includes/class-feed-parser.php
+msgid "Unknown XML error"
+msgstr ""
+
+#: includes/class-feed-parser.php
+#, php-format
+msgid "XML parse error: %s"
+msgstr ""
+
+#: includes/class-feed-parser.php
+msgid "No &lt;channel&gt; element found in feed."
+msgstr ""
+
+#: includes/class-importer.php
+msgid "No feed URL configured."
+msgstr ""
+
+#: includes/class-cron.php
+msgid "Every 15 Minutes"
+msgstr ""
+
+#: includes/class-cron.php
+msgid "Weekly"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "RSS Importer"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Feed Settings"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Feed URL"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "The Events Calendar RSS feed URL from the source site."
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Import Schedule"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Hourly"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Twice Daily"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Daily"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Event Defaults"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Default Event Duration"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "1 hour"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "2 hours"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "3 hours"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "4 hours"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "8 hours"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "24 hours (all day)"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Used when the feed does not provide an end time."
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Post Status"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Published"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Draft"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "On Re-import"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Update existing events (uncheck to skip)"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Save Settings"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Import Status"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Last run:"
+msgstr ""
+
+#: includes/class-admin.php
+#, php-format
+msgid "%s ago"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Never"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Last result:"
+msgstr ""
+
+#: includes/class-admin.php
+#, php-format
+msgid "%1$d created, %2$d updated, %3$d skipped"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Next scheduled run:"
+msgstr ""
+
+#: includes/class-admin.php
+#, php-format
+msgid "in %s"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Not scheduled"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Last error:"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Source Site Setup"
+msgstr ""
+
+#. translators: 1: opening <strong>, 2: closing </strong>
+#: includes/class-admin.php
+#, php-format
+msgid "For exact start %1$sand%2$s end times to be imported, the source site (the site this feed comes from) must expose them in the RSS feed. Add the snippet below to that site's %1$schild theme functions.php%2$s. Without it, the importer falls back to the default duration set above."
+msgstr ""
+
+#: includes/class-admin.php
+msgid "The snippet uses wp_timezone_string() so it automatically reads the correct timezone from whichever site it is installed on — no manual adjustments needed."
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Copy to clipboard"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Copied!"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Manual Import"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Run an import immediately using the current settings."
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Show debug log after import"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Import Now"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Import Debug Log"
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Generated by the last manual import. Disappears on next page load."
+msgstr ""
+
+#: includes/class-admin.php
+msgid "You do not have permission to do this."
+msgstr ""
+
+#: includes/class-admin.php
+msgid "Import failed:"
+msgstr ""
+
+#: includes/class-admin.php
+#, php-format
+msgid "Import complete: %1$d created, %2$d updated, %3$d skipped."
+msgstr ""

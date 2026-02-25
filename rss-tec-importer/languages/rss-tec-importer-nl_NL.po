@@ -1,0 +1,275 @@
+# Dutch translation for RSS TEC Importer.
+# Copyright (C) 2026 Jasper
+# This file is distributed under the same license as the RSS TEC Importer plugin.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: RSS TEC Importer 1.1.0\n"
+"Report-Msgid-Bugs-To: https://github.com/jasperfrontend/rss-tec-importer/issues\n"
+"POT-Creation-Date: 2026-02-25T12:00:00+00:00\n"
+"PO-Revision-Date: 2026-02-25T12:00:00+00:00\n"
+"Last-Translator: Jasper <>\n"
+"Language-Team: Dutch\n"
+"Language: nl_NL\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Domain: rss-tec-importer\n"
+
+#. Plugin Name of the plugin
+msgid "RSS TEC Importer"
+msgstr "RSS TEC Importer"
+
+#. Description of the plugin
+msgid "Imports events from an RSS feed (The Events Calendar format) into The Events Calendar on this site."
+msgstr "Importeert evenementen uit een RSS-feed (The Events Calendar-formaat) naar The Events Calendar op deze site."
+
+#. Author of the plugin
+msgid "Jasper"
+msgstr "Jasper"
+
+#: rss-tec-importer.php
+msgid "RSS TEC Importer requires The Events Calendar plugin to be installed and active."
+msgstr "RSS TEC Importer vereist dat de plugin The Events Calendar is geïnstalleerd en actief is."
+
+#: rss-tec-importer.php
+msgid "RSS TEC Importer requires The Events Calendar to be installed and active."
+msgstr "RSS TEC Importer vereist dat The Events Calendar is geïnstalleerd en actief is."
+
+#: rss-tec-importer.php
+msgid "Plugin Activation Error"
+msgstr "Fout bij activeren van plugin"
+
+#: includes/class-feed-parser.php
+#, php-format
+msgid "Failed to fetch feed: %s"
+msgstr "Feed ophalen mislukt: %s"
+
+#: includes/class-feed-parser.php
+#, php-format
+msgid "Feed returned HTTP %d."
+msgstr "Feed retourneerde HTTP %d."
+
+#: includes/class-feed-parser.php
+msgid "Feed body is empty."
+msgstr "Feed-inhoud is leeg."
+
+#: includes/class-feed-parser.php
+msgid "Unknown XML error"
+msgstr "Onbekende XML-fout"
+
+#: includes/class-feed-parser.php
+#, php-format
+msgid "XML parse error: %s"
+msgstr "XML-parseerfout: %s"
+
+#: includes/class-feed-parser.php
+msgid "No &lt;channel&gt; element found in feed."
+msgstr "Geen &lt;channel&gt;-element gevonden in de feed."
+
+#: includes/class-importer.php
+msgid "No feed URL configured."
+msgstr "Geen feed-URL geconfigureerd."
+
+#: includes/class-cron.php
+msgid "Every 15 Minutes"
+msgstr "Elke 15 minuten"
+
+#: includes/class-cron.php
+msgid "Weekly"
+msgstr "Wekelijks"
+
+#: includes/class-admin.php
+msgid "RSS Importer"
+msgstr "RSS Importer"
+
+#: includes/class-admin.php
+msgid "Feed Settings"
+msgstr "Feed-instellingen"
+
+#: includes/class-admin.php
+msgid "Feed URL"
+msgstr "Feed-URL"
+
+#: includes/class-admin.php
+msgid "The Events Calendar RSS feed URL from the source site."
+msgstr "De RSS-feed-URL van The Events Calendar op de bronsite."
+
+#: includes/class-admin.php
+msgid "Import Schedule"
+msgstr "Importschema"
+
+#: includes/class-admin.php
+msgid "Hourly"
+msgstr "Elk uur"
+
+#: includes/class-admin.php
+msgid "Twice Daily"
+msgstr "Twee keer per dag"
+
+#: includes/class-admin.php
+msgid "Daily"
+msgstr "Dagelijks"
+
+#: includes/class-admin.php
+msgid "Event Defaults"
+msgstr "Standaarden voor evenementen"
+
+#: includes/class-admin.php
+msgid "Default Event Duration"
+msgstr "Standaard evenementduur"
+
+#: includes/class-admin.php
+msgid "1 hour"
+msgstr "1 uur"
+
+#: includes/class-admin.php
+msgid "2 hours"
+msgstr "2 uur"
+
+#: includes/class-admin.php
+msgid "3 hours"
+msgstr "3 uur"
+
+#: includes/class-admin.php
+msgid "4 hours"
+msgstr "4 uur"
+
+#: includes/class-admin.php
+msgid "8 hours"
+msgstr "8 uur"
+
+#: includes/class-admin.php
+msgid "24 hours (all day)"
+msgstr "24 uur (hele dag)"
+
+#: includes/class-admin.php
+msgid "Used when the feed does not provide an end time."
+msgstr "Gebruikt wanneer de feed geen eindtijd vermeldt."
+
+#: includes/class-admin.php
+msgid "Post Status"
+msgstr "Berichtstatus"
+
+#: includes/class-admin.php
+msgid "Published"
+msgstr "Gepubliceerd"
+
+#: includes/class-admin.php
+msgid "Draft"
+msgstr "Concept"
+
+#: includes/class-admin.php
+msgid "On Re-import"
+msgstr "Bij herhaalde import"
+
+#: includes/class-admin.php
+msgid "Update existing events (uncheck to skip)"
+msgstr "Bestaande evenementen bijwerken (uitvinken om over te slaan)"
+
+#: includes/class-admin.php
+msgid "Save Settings"
+msgstr "Instellingen opslaan"
+
+#: includes/class-admin.php
+msgid "Import Status"
+msgstr "Importstatus"
+
+#: includes/class-admin.php
+msgid "Last run:"
+msgstr "Laatste uitvoering:"
+
+#: includes/class-admin.php
+#, php-format
+msgid "%s ago"
+msgstr "%s geleden"
+
+#: includes/class-admin.php
+msgid "Never"
+msgstr "Nooit"
+
+#: includes/class-admin.php
+msgid "Last result:"
+msgstr "Laatste resultaat:"
+
+#: includes/class-admin.php
+#, php-format
+msgid "%1$d created, %2$d updated, %3$d skipped"
+msgstr "%1$d aangemaakt, %2$d bijgewerkt, %3$d overgeslagen"
+
+#: includes/class-admin.php
+msgid "Next scheduled run:"
+msgstr "Volgende geplande uitvoering:"
+
+#: includes/class-admin.php
+#, php-format
+msgid "in %s"
+msgstr "over %s"
+
+#: includes/class-admin.php
+msgid "Not scheduled"
+msgstr "Niet gepland"
+
+#: includes/class-admin.php
+msgid "Last error:"
+msgstr "Laatste fout:"
+
+#: includes/class-admin.php
+msgid "Source Site Setup"
+msgstr "Instelling bronsite"
+
+#. translators: 1: opening <strong>, 2: closing </strong>
+#: includes/class-admin.php
+#, php-format
+msgid "For exact start %1$sand%2$s end times to be imported, the source site (the site this feed comes from) must expose them in the RSS feed. Add the snippet below to that site's %1$schild theme functions.php%2$s. Without it, the importer falls back to the default duration set above."
+msgstr "Voor het importeren van exacte start- %1$sen%2$s eindtijden moet de bronsite (de site waar deze feed vandaan komt) deze gegevens beschikbaar stellen in de RSS-feed. Voeg het onderstaande snippet toe aan het %1$sfunctions.php van het child-thema%2$s van die site. Zonder dit snippet valt de importer terug op de hierboven ingestelde standaardduur."
+
+#: includes/class-admin.php
+msgid "The snippet uses wp_timezone_string() so it automatically reads the correct timezone from whichever site it is installed on — no manual adjustments needed."
+msgstr "Het snippet gebruikt wp_timezone_string() zodat het automatisch de juiste tijdzone leest van de site waarop het is geïnstalleerd — geen handmatige aanpassingen nodig."
+
+#: includes/class-admin.php
+msgid "Copy to clipboard"
+msgstr "Kopiëren naar klembord"
+
+#: includes/class-admin.php
+msgid "Copied!"
+msgstr "Gekopieerd!"
+
+#: includes/class-admin.php
+msgid "Manual Import"
+msgstr "Handmatige import"
+
+#: includes/class-admin.php
+msgid "Run an import immediately using the current settings."
+msgstr "Voer direct een import uit met de huidige instellingen."
+
+#: includes/class-admin.php
+msgid "Show debug log after import"
+msgstr "Debug-log weergeven na import"
+
+#: includes/class-admin.php
+msgid "Import Now"
+msgstr "Nu importeren"
+
+#: includes/class-admin.php
+msgid "Import Debug Log"
+msgstr "Import debug-log"
+
+#: includes/class-admin.php
+msgid "Generated by the last manual import. Disappears on next page load."
+msgstr "Gegenereerd door de laatste handmatige import. Verdwijnt bij de volgende paginaopbouw."
+
+#: includes/class-admin.php
+msgid "You do not have permission to do this."
+msgstr "U hebt geen toestemming om dit te doen."
+
+#: includes/class-admin.php
+msgid "Import failed:"
+msgstr "Import mislukt:"
+
+#: includes/class-admin.php
+#, php-format
+msgid "Import complete: %1$d created, %2$d updated, %3$d skipped."
+msgstr "Import voltooid: %1$d aangemaakt, %2$d bijgewerkt, %3$d overgeslagen."

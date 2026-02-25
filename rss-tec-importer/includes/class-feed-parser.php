@@ -151,7 +151,7 @@ class RSS_TEC_Feed_Parser {
 		if ( false === $xml ) {
 			$errors = libxml_get_errors();
 			libxml_clear_errors();
-			$msg = ! empty( $errors ) ? $errors[0]->message : 'Unknown XML error';
+			$msg = ! empty( $errors ) ? $errors[0]->message : __( 'Unknown XML error', 'rss-tec-importer' );
 			RSS_TEC_Logger::error( 'XML parse failed', [ 'libxml_error' => $msg ] );
 			return new WP_Error( 'rss_tec_xml_parse', sprintf( __( 'XML parse error: %s', 'rss-tec-importer' ), $msg ) );
 		}
