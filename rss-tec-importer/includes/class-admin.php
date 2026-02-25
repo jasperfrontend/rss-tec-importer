@@ -37,6 +37,41 @@ class RSS_TEC_Admin {
 		add_action( 'admin_init', [ __CLASS__, 'register_settings' ] );
 		add_action( 'admin_post_rss_tec_import_now', [ __CLASS__, 'handle_manual_import' ] );
 		add_action( 'admin_notices', [ __CLASS__, 'maybe_show_import_result_notice' ] );
+		add_action( 'admin_enqueue_scripts', [ __CLASS__, 'maybe_enqueue_code_editor' ] );
+	}
+
+	/**
+	 * Enqueue WordPress's built-in CodeMirror on our settings page only.
+	 *
+	 * @param string $hook Current admin page hook.
+	 */
+	public static function maybe_enqueue_code_editor( string $hook ): void {
+		if ( 'settings_page_' . self::PAGE_SLUG !== $hook ) {
+			return;
+		}
+
+		$cm_settings = wp_enqueue_code_editor( [ 'type' => 'application/x-httpd-php' ] );
+
+		if ( false === $cm_settings ) {
+			// User disabled CodeMirror (accessibility settings) — plain textarea is fine.
+			return;
+		}
+
+		// Force read-only mode.
+		$cm_settings['codemirror']['readOnly'] = true;
+
+		wp_add_inline_script(
+			'code-editor',
+			sprintf(
+				'document.addEventListener("DOMContentLoaded",function(){
+					var el = document.getElementById("rss-tec-snippet");
+					if(el && typeof wp !== "undefined" && wp.codeEditor){
+						wp.codeEditor.initialize(el, %s);
+					}
+				});',
+				wp_json_encode( $cm_settings )
+			)
+		);
 	}
 
 	// ---------------------------------------------------------------------------
@@ -254,6 +289,10 @@ class RSS_TEC_Admin {
 
 			<hr />
 
+			<?php self::render_source_snippet(); ?>
+
+			<hr />
+
 			<h2><?php esc_html_e( 'Manual Import', 'rss-tec-importer' ); ?></h2>
 			<p><?php esc_html_e( 'Run an import immediately using the current settings.', 'rss-tec-importer' ); ?></p>
 
@@ -342,6 +381,121 @@ class RSS_TEC_Admin {
 				<?php endif; ?>
 			</ul>
 		</div>
+		<?php
+	}
+
+	// ---------------------------------------------------------------------------
+	// Source site snippet
+	// ---------------------------------------------------------------------------
+
+	/**
+	 * Render the "add this to your source site" code snippet section.
+	 */
+	private static function render_source_snippet(): void {
+		$timezone = wp_timezone_string();
+
+		// Build the snippet with the site's actual timezone substituted in.
+		// Uses nowdoc so we can write PHP code without escaping issues.
+		$snippet = <<<'SNIPPET'
+/**
+ * Adds ISO 8601 event date fields to The Events Calendar RSS feed.
+ *
+ * Add this snippet to your child theme's functions.php on the SOURCE site
+ * (the site where events are created in The Events Calendar). Without it,
+ * the RSS TEC Importer on the destination site cannot read exact start and
+ * end times and will fall back to the fixed default duration configured in
+ * the plugin settings instead.
+ *
+ * The timezone string must match the timezone configured on the source site
+ * (Settings > General > Timezone). The value below was automatically copied
+ * from this site's timezone setting — adjust it if your source site differs.
+ *
+ * @see https://theeventscalendar.com/knowledgebase/customizing-the-rss-feed/
+ */
+
+// Register the ev: namespace on the RSS channel element.
+add_action( 'rss2_ns', function() {
+	echo 'xmlns:ev="http://purl.org/rss/2.0/modules/event/"' . "\n";
+} );
+
+// Output ISO 8601 start and end datetimes for each event item.
+add_action( 'rss2_item', function() {
+	if ( ! tribe_is_event() ) {
+		return;
+	}
+	echo '<ev:startdate>' . esc_html( tribe_get_start_date( null, true, 'c', 'TIMEZONE' ) ) . '</ev:startdate>' . "\n";
+	echo '<ev:enddate>'   . esc_html( tribe_get_end_date( null, true, 'c', 'TIMEZONE' ) )   . '</ev:enddate>'   . "\n";
+} );
+SNIPPET;
+
+		$snippet = str_replace( 'TIMEZONE', $timezone, $snippet );
+
+		?>
+		<h2><?php esc_html_e( 'Source Site Setup', 'rss-tec-importer' ); ?></h2>
+		<p>
+			<?php
+			printf(
+				/* translators: 1: opening <strong>, 2: closing </strong> */
+				esc_html__( 'For exact start %1$sand%2$s end times to be imported, the source site (the site this feed comes from) must expose them in the RSS feed. Add the snippet below to that site\'s %1$schild theme functions.php%2$s. Without it, the importer falls back to the default duration set above.', 'rss-tec-importer' ),
+				'<strong>',
+				'</strong>'
+			);
+			?>
+		</p>
+		<p style="color: #646970;">
+			<?php
+			printf(
+				/* translators: %s: timezone string */
+				esc_html__( 'The timezone in the snippet (%s) is read from this site\'s Settings > General. Adjust it if your source site uses a different timezone.', 'rss-tec-importer' ),
+				'<code>' . esc_html( $timezone ) . '</code>'
+			);
+			?>
+		</p>
+
+		<div style="margin-bottom: 8px;">
+			<button id="rss-tec-copy-btn" type="button" class="button">
+				<?php esc_html_e( 'Copy to clipboard', 'rss-tec-importer' ); ?>
+			</button>
+		</div>
+
+		<textarea
+			id="rss-tec-snippet"
+			readonly
+			rows="<?php echo esc_attr( (string) ( substr_count( $snippet, "\n" ) + 2 ) ); ?>"
+			style="width: 100%; font-family: monospace; font-size: 13px;"
+		><?php echo esc_textarea( $snippet ); ?></textarea>
+
+		<script>
+		( function() {
+			var code = <?php echo wp_json_encode( $snippet ); ?>;
+			var btn  = document.getElementById( 'rss-tec-copy-btn' );
+			if ( ! btn ) return;
+
+			btn.addEventListener( 'click', function() {
+				if ( navigator.clipboard ) {
+					navigator.clipboard.writeText( code ).then( function() { setCopied(); } );
+				} else {
+					// Fallback for non-HTTPS environments.
+					var ta = document.createElement( 'textarea' );
+					ta.value = code;
+					ta.style.position = 'fixed';
+					ta.style.opacity  = '0';
+					document.body.appendChild( ta );
+					ta.select();
+					document.execCommand( 'copy' );
+					document.body.removeChild( ta );
+					setCopied();
+				}
+			} );
+
+			function setCopied() {
+				btn.textContent = <?php echo wp_json_encode( __( 'Copied!', 'rss-tec-importer' ) ); ?>;
+				setTimeout( function() {
+					btn.textContent = <?php echo wp_json_encode( __( 'Copy to clipboard', 'rss-tec-importer' ) ); ?>;
+				}, 2000 );
+			}
+		} )();
+		</script>
 		<?php
 	}
 
