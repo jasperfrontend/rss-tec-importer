@@ -46,7 +46,7 @@ class RSS_TEC_Admin {
 	 * @param string $hook Current admin page hook.
 	 */
 	public static function maybe_enqueue_code_editor( string $hook ): void {
-		if ( 'settings_page_' . self::PAGE_SLUG !== $hook ) {
+		if ( 'tribe_events_page_' . self::PAGE_SLUG !== $hook ) {
 			return;
 		}
 
@@ -79,9 +79,10 @@ class RSS_TEC_Admin {
 	// ---------------------------------------------------------------------------
 
 	public static function add_settings_page(): void {
-		add_options_page(
+		add_submenu_page(
+			'edit.php?post_type=tribe_events',
 			__( 'RSS TEC Importer', 'rss-tec-importer' ),
-			__( 'RSS TEC Importer', 'rss-tec-importer' ),
+			__( 'RSS Importer', 'rss-tec-importer' ),
 			'manage_options',
 			self::PAGE_SLUG,
 			[ __CLASS__, 'render_settings_page' ]
@@ -609,7 +610,7 @@ SNIPPET;
 		}
 
 		wp_safe_redirect(
-			add_query_arg( $redirect_args, admin_url( 'options-general.php' ) )
+			add_query_arg( $redirect_args, admin_url( 'admin.php' ) )
 		);
 		exit;
 	}
@@ -625,7 +626,7 @@ SNIPPET;
 		}
 
 		$screen = get_current_screen();
-		if ( ! $screen || 'settings_page_' . self::PAGE_SLUG !== $screen->id ) {
+		if ( ! $screen || 'tribe_events_page_' . self::PAGE_SLUG !== $screen->id ) {
 			return;
 		}
 
