@@ -18,7 +18,7 @@ This replicates the core function of TEC's paid **Event Aggregator** add-on, pur
 
 1. Upload the `rss-tec-importer` folder to `/wp-content/plugins/`
 2. Activate the plugin through **Plugins > Installed Plugins**
-3. Go to **Settings > RSS TEC Importer** and enter the feed URL
+3. Go to **Events > RSS Importer** and enter the feed URL
 
 ---
 
@@ -28,7 +28,7 @@ This replicates the core function of TEC's paid **Event Aggregator** add-on, pur
 |---|---|---|
 | **Feed URL** | The Events Calendar RSS feed URL from the source site | _(empty)_ |
 | **Import Schedule** | How often WP-Cron checks for new events | Daily |
-| **Default Event Duration** | End time offset when the feed has no end date | 1 hour |
+| **Default Event Duration** | End time offset when the feed has no exact end time | 1 hour |
 | **Post Status** | Whether imported events are published or saved as drafts | Draft |
 | **On Re-import** | Update existing events on subsequent imports, or skip them | Skip |
 
@@ -40,12 +40,58 @@ Settings are saved under the option key `rss_tec_importer_settings`.
 
 1. On a configured schedule (or via the **Import Now** button), the plugin fetches the RSS feed.
 2. Each `<item>` is parsed:
-   - `<pubDate>` is used as the event **start date** — this is how TEC's own RSS feed works.
+   - If the source site exposes `<ev:startdate>` and `<ev:enddate>` (see [Source Site Setup](#source-site-setup) below), those ISO 8601 timestamps are used for exact start and end times.
+   - Otherwise the plugin falls back to `<pubDate>` for the start time — this is how TEC's own RSS feed works — and calculates the end time by adding the configured default duration.
    - The first `<img>` in the item description is sideloaded into the media library and set as the event's featured image.
    - The image tag is stripped from the post content to avoid duplication.
-   - End time is calculated by adding the configured duration to the start time.
 3. Events are deduplicated by GUID (`_rss_tec_source_guid` post meta). On subsequent runs, existing events are either skipped or updated depending on the setting.
 4. Run results (created / updated / skipped counts) and the last error, if any, are shown in the **Status Box** at the top of the settings page.
+
+---
+
+## Source Site Setup
+
+By default, TEC's RSS feed only exposes `<pubDate>`, which carries no end time. To import exact start **and** end times, add the following snippet to the **source site's** child theme `functions.php` (the site the feed comes from, not the destination site).
+
+```php
+/**
+ * Adds ISO 8601 event date fields to The Events Calendar RSS feed.
+ *
+ * wp_timezone_string() reads the timezone directly from the source site's
+ * own Settings > General, so no manual timezone configuration is needed.
+ */
+
+// Register the ev: namespace on the RSS channel element.
+add_action( 'rss2_ns', function() {
+    echo 'xmlns:ev="http://purl.org/rss/2.0/modules/event/"' . "\n";
+} );
+
+// Output ISO 8601 start and end datetimes for each event item.
+add_action( 'rss2_item', function() {
+    if ( ! tribe_is_event() ) {
+        return;
+    }
+    echo '<ev:startdate>' . esc_html( tribe_get_start_date( null, true, 'c', wp_timezone_string() ) ) . '</ev:startdate>' . "\n";
+    echo '<ev:enddate>'   . esc_html( tribe_get_end_date( null, true, 'c', wp_timezone_string() ) )   . '</ev:enddate>'   . "\n";
+} );
+```
+
+The snippet is also shown (with a copy button) on the **Events > RSS Importer** settings page. Without it the importer still works, but falls back to the default duration for all events.
+
+---
+
+## Translations
+
+The plugin is fully translatable. Text domain: `rss-tec-importer`.
+
+A Dutch (nl\_NL) translation is bundled. All other languages can be added via [Loco Translate](https://wordpress.org/plugins/loco-translate/):
+
+1. Install and activate Loco Translate
+2. Go to **Loco Translate > Plugins > RSS TEC Importer**
+3. Click **New language**, pick your locale, and translate
+4. Loco Translate compiles and saves the `.mo` file automatically
+
+The `.pot` template is at `languages/rss-tec-importer.pot`.
 
 ---
 
