@@ -78,7 +78,7 @@ class RSS_TEC_Feed_Parser {
 		// Detect namespaces used in this feed.
 		$ns         = $xml->getNamespaces( true );
 		$content_ns = $ns['content'] ?? null;
-		$ev_ns      = $ns['ev']      ?? null; // http://purl.org/rss/2.0/modules/event/
+		$ev_ns_uri  = $ns['ev']      ?? null; // http://purl.org/rss/2.0/modules/event/
 
 		$items = [];
 
@@ -101,13 +101,23 @@ class RSS_TEC_Feed_Parser {
 			// --- Start date ---
 			// Prefer ev:startdate (ISO 8601) when the ev: namespace is present;
 			// fall back to pubDate (RFC 2822) which TEC also sets to the start time.
+			// XPath is used here because SimpleXML's property-based child access
+			// ( ->children($ns)->element ) is unreliable for custom namespaces.
+			$ev_start_str = '';
+			$ev_end_str   = '';
+
+			if ( $ev_ns_uri ) {
+				$item->registerXPathNamespace( 'ev', $ev_ns_uri );
+				$ev_start_nodes = $item->xpath( 'ev:startdate' );
+				$ev_end_nodes   = $item->xpath( 'ev:enddate' );
+				$ev_start_str   = ! empty( $ev_start_nodes ) ? trim( (string) $ev_start_nodes[0] ) : '';
+				$ev_end_str     = ! empty( $ev_end_nodes )   ? trim( (string) $ev_end_nodes[0] )   : '';
+			}
+
 			$start_dt = null;
 
-			if ( $ev_ns ) {
-				$ev_start_str = trim( (string) $item->children( $ev_ns )->startdate );
-				if ( $ev_start_str ) {
-					$start_dt = date_create( $ev_start_str ) ?: null;
-				}
+			if ( $ev_start_str ) {
+				$start_dt = date_create( $ev_start_str ) ?: null;
 			}
 
 			if ( ! $start_dt ) {
@@ -134,14 +144,11 @@ class RSS_TEC_Feed_Parser {
 			// to fall back to the configured duration offset instead.
 			$end_dt = null;
 
-			if ( $ev_ns ) {
-				$ev_end_str = trim( (string) $item->children( $ev_ns )->enddate );
-				if ( $ev_end_str ) {
-					$parsed = date_create( $ev_end_str );
-					if ( $parsed ) {
-						$end_dt = $parsed;
-						$end_dt->setTimezone( wp_timezone() );
-					}
+			if ( $ev_end_str ) {
+				$parsed = date_create( $ev_end_str );
+				if ( $parsed ) {
+					$end_dt = $parsed;
+					$end_dt->setTimezone( wp_timezone() );
 				}
 			}
 
