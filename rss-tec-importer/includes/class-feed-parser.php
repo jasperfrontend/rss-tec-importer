@@ -119,6 +119,31 @@ class RSS_TEC_Feed_Parser {
 	 * @return array[]|WP_Error
 	 */
 	private static function parse( string $xml_string ): array|WP_Error {
+		// Strip duplicate xmlns: declarations from the root <rss> element.
+		// A feed is invalid XML if the same namespace prefix is declared more
+		// than once on the same element (e.g. two WordPress hooks both outputting
+		// xmlns:ev=). libxml rejects such a document outright. We keep the first
+		// occurrence of each prefix and silently drop the rest before parsing.
+		$xml_string = preg_replace_callback(
+			'/(<rss\b[^>]*>)/s',
+			static function ( array $m ) {
+				$seen = [];
+				return preg_replace_callback(
+					'/\s+xmlns:(\w+)="[^"]*"/',
+					static function ( array $attr ) use ( &$seen ) {
+						$prefix = $attr[1];
+						if ( isset( $seen[ $prefix ] ) ) {
+							return ''; // drop the duplicate
+						}
+						$seen[ $prefix ] = true;
+						return $attr[0];
+					},
+					$m[1]
+				);
+			},
+			$xml_string
+		);
+
 		libxml_use_internal_errors( true );
 		$xml = simplexml_load_string( $xml_string );
 
